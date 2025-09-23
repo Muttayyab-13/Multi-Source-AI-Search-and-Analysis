@@ -1,0 +1,87 @@
+/* Custom styles for Multi-Source AI Search */
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #f8f9fa;
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 600;
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.btn-lg {
+    padding: 12px 24px;
+}
+
+.input-group-lg > .form-control {
+    border-radius: 8px 0 0 8px;
+    padding: 16px 20px;
+    font-size: 1.1rem;
+}
+
+.input-group-lg > .btn {
+    border-radius: 0 8px 8px 0;
+}
+
+/* Search results styles */
+.source-analysis-card {
+    transition: transform 0.2s ease;
+}
+
+.source-analysis-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Chat panel styles */
+#chat-messages {
+    background-color: #fafafa;
+}
+
+#chat-messages::-webkit-scrollbar {
+    width: 4px;
+}
+
+#chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#chat-messages::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 2px;
+}
+
+.chat-message {
+    animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.suggestion-btn {
+    font-size: 0.9rem;   /* about 14–15px */
+}

@@ -1,0 +1,632 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <div class="mb-4">
+                <h2>Analysis Results for: <span class="text-primary">"{{ query }}"</span></h2>
+                
+                <div id="loading-section">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h5 id="status-message">Processing your search...</h5>
+                            <div class="progress mt-3">
+                                <div id="progress-bar" class="progress-bar bg-primary" role="progressbar" 
+                                     style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Section (Hidden initially) -->
+                <div id="results-section" style="display: none;">
+                    <!-- Overall Summary -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-chart-line"></i> Overall Summary</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="overall-summary">Loading summary...</div>
+                            <div class="mt-3">
+                                <small class="text-muted" id="analysis-meta">Analysis completed on: <span id="timestamp"></span></small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Key Insights -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Key Insights</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="key-insights">Loading insights...</div>
+                        </div>
+                    </div>
+
+                    <!-- Source Analysis Panels -->
+                    <div class="row">
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-danger text-white">
+                                    <h6 class="mb-0"><i class="fab fa-youtube"></i> YouTube Analysis</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="youtube-analysis">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="fas fa-newspaper"></i> News Analysis</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="news-analysis">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="fab fa-twitter"></i> Social Media Analysis</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="twitter-analysis">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sentiment Chart -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Overall Sentiment Distribution</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="sentimentChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Raw Data Section -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link text-decoration-none" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#rawDataCollapse"
+                                        onclick="loadRawDataIfNeeded()">
+                                    <i class="fas fa-database"></i> Raw Data <small class="text-muted">(Click to expand)</small>
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="rawDataCollapse" class="collapse">
+                            <div class="card-body">
+                                <div id="raw-data">Loading raw data...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Panel -->
+        <div class="col-lg-4">
+            <div class="sticky-top" style="top: 20px;">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0"><i class="fas fa-comments"></i> Ask Follow-up Questions</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- Chat Messages -->
+                        <div id="chat-messages" style="height: 400px; overflow-y: auto; padding: 15px;">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-robot fa-2x mb-2"></i>
+                                <p>Ask me anything about the search results!</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Suggested Questions -->
+                        <div id="suggested-questions" class="border-top p-3" style="display: none;">
+                            <small class="text-muted">Suggested questions:</small>
+                            <div id="suggestions-container" class="mt-2"></div>
+                        </div>
+                        
+                        <!-- Chat Input -->
+                        <div class="border-top p-3">
+                            <div class="input-group">
+                                <input type="text" id="chat-input" class="form-control" 
+                                       placeholder="Ask a question..." disabled>
+                                <button id="send-btn" class="btn btn-primary" disabled>
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Results page JavaScript
+let resultsLoaded = false;
+let rawDataLoaded = false;
+
+// Check processing status periodically
+function checkStatus() {
+    fetch('/api/status')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const progressBar = document.getElementById('progress-bar');
+            const statusMessage = document.getElementById('status-message');
+            
+            if (progressBar && statusMessage) {
+                if (data.is_processing) {
+                    progressBar.style.width = data.progress + '%';
+                    progressBar.setAttribute('aria-valuenow', data.progress);
+                    statusMessage.textContent = data.message;
+                    
+                    // Continue checking
+                    setTimeout(checkStatus, 1000);
+                } else if (data.progress === 100) {
+                    // Processing complete, load results
+                    loadResults();
+                } else {
+                    // Error occurred
+                    statusMessage.textContent = data.message || 'An error occurred';
+                    statusMessage.className = 'text-danger';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Status check error:', error);
+            const statusMessage = document.getElementById('status-message');
+            if (statusMessage) {
+                statusMessage.textContent = 'Error checking status';
+                statusMessage.className = 'text-danger';
+            }
+        });
+}
+
+// Load and display results
+function loadResults() {
+    fetch('/api/results')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load results');
+            }
+            return response.json();
+        })
+        .then(data => {
+            displayResults(data);
+            loadSuggestions();
+            enableChat();
+            
+            // Hide loading, show results
+            const loadingSection = document.getElementById('loading-section');
+            const resultsSection = document.getElementById('results-section');
+            
+            if (loadingSection) loadingSection.style.display = 'none';
+            if (resultsSection) resultsSection.style.display = 'block';
+            
+            resultsLoaded = true;
+        })
+        .catch(error => {
+            console.error('Results loading error:', error);
+            const statusMessage = document.getElementById('status-message');
+            if (statusMessage) {
+                statusMessage.textContent = 'Error loading results: ' + error.message;
+                statusMessage.className = 'text-danger';
+            }
+        });
+}
+
+// Display results in the UI
+function displayResults(data) {
+    try {
+        // Overall summary
+        const summaryElement = document.getElementById('overall-summary');
+        const timestampElement = document.getElementById('timestamp');
+        
+        if (summaryElement && data.summary) {
+            summaryElement.innerHTML = data.summary.replace(/\n/g, '<br>');
+        }
+        
+        if (timestampElement && data.timestamp) {
+            timestampElement.textContent = new Date(data.timestamp).toLocaleString();
+        }
+        
+        // Key insights
+        const insightsElement = document.getElementById('key-insights');
+        if (insightsElement && data.insights && Array.isArray(data.insights)) {
+            const insightsList = data.insights.map(insight => `<li class="mb-2">${insight}</li>`).join('');
+            insightsElement.innerHTML = `<ul class="list-unstyled">${insightsList}</ul>`;
+        }
+        
+        // Source analyses
+        if (data.sources) {
+            displaySourceAnalysis('youtube', data.sources.youtube);
+            displaySourceAnalysis('news', data.sources.news);
+            displaySourceAnalysis('twitter', data.sources.twitter);
+        }
+        
+        // Sentiment chart
+        if (data.sentiment_distribution) {
+            createSentimentChart(data.sentiment_distribution);
+        }
+    } catch (error) {
+        console.error('Error displaying results:', error);
+    }
+}
+
+// Display source analysis
+function displaySourceAnalysis(sourceType, analysis) {
+    try {
+        if (!analysis) return;
+        
+        const container = document.getElementById(`${sourceType}-analysis`);
+        if (!container) return;
+        
+        const sentiment = analysis.sentiment || {};
+        
+        container.innerHTML = `
+            <div class="mb-3">
+                <strong>Total Results:</strong> ${analysis.total_results || 0}
+            </div>
+            <div class="mb-3">
+                <strong>Sentiment:</strong><br>
+                <small class="text-success">Positive: ${((sentiment.positive || 0) * 100).toFixed(1)}%</small><br>
+                <small class="text-danger">Negative: ${((sentiment.negative || 0) * 100).toFixed(1)}%</small><br>
+                <small class="text-muted">Neutral: ${((sentiment.neutral || 0) * 100).toFixed(1)}%</small>
+            </div>
+            <div class="mb-3">
+                <strong>Key Themes:</strong><br>
+                ${(analysis.key_themes || []).map(theme => `<span class="badge bg-secondary me-1">${theme}</span>`).join('')}
+            </div>
+        `;
+    } catch (error) {
+        console.error(`Error displaying ${sourceType} analysis:`, error);
+    }
+}
+
+// Create sentiment chart
+function createSentimentChart(sentimentData) {
+    try {
+        const ctx = document.getElementById('sentimentChart');
+        if (!ctx) return;
+        
+        const chartContext = ctx.getContext('2d');
+        
+        new Chart(chartContext, {
+            type: 'doughnut',
+            data: {
+                labels: ['Positive', 'Negative', 'Neutral'],
+                datasets: [{
+                    data: [
+                        ((sentimentData.positive || 0) * 100).toFixed(1),
+                        ((sentimentData.negative || 0) * 100).toFixed(1),
+                        ((sentimentData.neutral || 0) * 100).toFixed(1)
+                    ],
+                    backgroundColor: ['#28a745', '#dc3545', '#6c757d'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error creating sentiment chart:', error);
+    }
+}
+
+// Load suggested questions
+function loadSuggestions() {
+    fetch('/api/suggestions')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('suggestions-container');
+            const suggestionsDiv = document.getElementById('suggested-questions');
+            
+            if (container && data.suggestions && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+                container.innerHTML = data.suggestions.map(suggestion => 
+                    `<button class="btn btn-outline-secondary btn-sm me-1 mb-1 suggestion-btn" 
+                             onclick="askSuggestedQuestion('${suggestion.replace(/'/g, '&#39;')}')">${suggestion}</button>`
+                ).join('');
+                
+                if (suggestionsDiv) {
+                    suggestionsDiv.style.display = 'block';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Suggestions error:', error);
+        });
+}
+
+// Enable chat functionality
+function enableChat() {
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    
+    if (chatInput && sendBtn) {
+        chatInput.disabled = false;
+        sendBtn.disabled = false;
+        
+        // Remove existing event listeners to avoid duplicates
+        const newChatInput = chatInput.cloneNode(true);
+        const newSendBtn = sendBtn.cloneNode(true);
+        
+        chatInput.parentNode.replaceChild(newChatInput, chatInput);
+        sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+        
+        // Add event listeners
+        newChatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        newSendBtn.addEventListener('click', sendMessage);
+    }
+}
+
+// Send chat message
+function sendMessage() {
+    const input = document.getElementById('chat-input');
+    if (!input) return;
+    
+    const question = input.value.trim();
+    if (!question) return;
+    
+    // Display user message
+    addChatMessage('user', question);
+    input.value = '';
+    
+    // Show typing indicator
+    showTypingIndicator();
+    
+    // Send to backend
+    fetch('/api/ask', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({question: question})
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove typing indicator
+        hideTypingIndicator();
+        
+        // Add bot response
+        if (data.error) {
+            addChatMessage('bot', 'Error: ' + data.error);
+        } else {
+            addChatMessage('bot', data.answer, false, data.sources);
+        }
+    })
+    .catch(error => {
+        console.error('Chat error:', error);
+        hideTypingIndicator();
+        addChatMessage('bot', 'Sorry, I encountered an error processing your question.');
+    });
+}
+
+// Show typing indicator
+function showTypingIndicator() {
+    const messagesContainer = document.getElementById('chat-messages');
+    if (!messagesContainer) return;
+
+    // Remove existing typing indicator
+    hideTypingIndicator();
+
+    const typingDiv = document.createElement('div');
+    typingDiv.id = 'typing-indicator';
+    typingDiv.className = 'mb-3 chat-message';
+    typingDiv.innerHTML = `
+        <div class="d-inline-block p-3 rounded bg-light border" style="max-width: 85%;">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    `;
+    
+    messagesContainer.appendChild(typingDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Hide typing indicator
+function hideTypingIndicator() {
+    const typingIndicator = document.getElementById('typing-indicator');
+    if (typingIndicator) {
+        typingIndicator.remove();
+    }
+}
+
+// Add chat message to UI
+function addChatMessage(sender, message, isTyping = false, sources = null) {
+    const messagesContainer = document.getElementById('chat-messages');
+    if (!messagesContainer) return;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `mb-3 chat-message ${sender === 'user' ? 'text-end' : ''}`;
+    
+    let content = `
+        <div class="d-inline-block p-3 rounded shadow-sm ${
+            sender === 'user' 
+                ? 'bg-primary text-white' 
+                : 'bg-white border'
+        }" style="max-width: 85%;">
+            <div class="message-text">${message.replace(/\n/g, '<br>')}</div>
+    `;
+
+    if (sources && Array.isArray(sources) && sources.length > 0) {
+        content += `
+            <div class="mt-2 pt-2 border-top">
+                <small class="d-block mb-1"><strong>Sources:</strong></small>
+                <div class="sources-list">
+        `;
+        
+        sources.slice(0, 3).forEach(source => {
+            const sourceType = source.source_type || 'unknown';
+            const icon = getSourceIcon(sourceType);
+            const title = source.title || 'Untitled';
+            const url = source.url || '#';
+            
+            content += `
+                <div class="mb-1">
+                    <a href="${url}" target="_blank" class="text-decoration-none small">
+                        <i class="${icon}"></i> ${title.substring(0, 50)}${title.length > 50 ? '...' : ''}
+                    </a>
+                </div>
+            `;
+        });
+        
+        content += '</div></div>';
+    }
+
+    content += '</div>';
+    messageDiv.innerHTML = content;
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Get source icon helper function
+function getSourceIcon(sourceType) {
+    const icons = {
+        'youtube': 'fab fa-youtube text-danger',
+        'news': 'fas fa-newspaper text-info',
+        'twitter': 'fab fa-twitter text-primary'
+    };
+    return icons[sourceType] || 'fas fa-globe';
+}
+
+// Ask suggested question
+function askSuggestedQuestion(question) {
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+        chatInput.value = question;
+        sendMessage();
+    }
+}
+
+// Load raw data when collapse is opened
+function loadRawDataIfNeeded() {
+    if (!rawDataLoaded && resultsLoaded) {
+        loadRawData();
+        rawDataLoaded = true;
+    }
+}
+
+// Load raw data
+function loadRawData() {
+    const rawDataContainer = document.getElementById('raw-data');
+    if (!rawDataContainer) return;
+
+    fetch('/api/documents')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load raw data');
+            }
+            return response.json();
+        })
+        .then(data => {
+            displayRawData(data.documents || []);
+        })
+        .catch(error => {
+            console.error('Raw data loading error:', error);
+            rawDataContainer.innerHTML = '<div class="alert alert-danger">Error loading raw data: ' + error.message + '</div>';
+        });
+}
+
+// Display raw data
+function displayRawData(documents) {
+    const container = document.getElementById('raw-data');
+    if (!container) return;
+    
+    if (!documents || documents.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No raw data available</div>';
+        return;
+    }
+
+    // Group documents by source type
+    const grouped = {};
+    documents.forEach(doc => {
+        if (!grouped[doc.source_type]) grouped[doc.source_type] = [];
+        grouped[doc.source_type].push(doc);
+    });
+
+    let html = '';
+    Object.keys(grouped).forEach(sourceType => {
+        const docs = grouped[sourceType];
+        const sourceIcon = getSourceIcon(sourceType);
+        
+        html += `
+            <div class="mb-4">
+                <h6 class="text-uppercase text-muted mb-3">
+                    <i class="${sourceIcon}"></i> ${sourceType.charAt(0).toUpperCase() + sourceType.slice(1)} (${docs.length} items)
+                </h6>
+                <div class="row">
+        `;
+
+        docs.slice(0, 10).forEach(doc => { // Limit to first 10 items per source
+            const title = doc.title || 'Untitled';
+            const content = doc.content || 'No content available';
+            const url = doc.url || '#';
+            const timestamp = doc.timestamp;
+            
+            html += `
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">${title.substring(0, 60)}${title.length > 60 ? '...' : ''}</h6>
+                            <p class="card-text small text-muted">${content.substring(0, 120)}${content.length > 120 ? '...' : ''}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="${url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-external-link-alt"></i> View
+                                </a>
+                                ${timestamp ? `<small class="text-muted">${new Date(timestamp).toLocaleDateString()}</small>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div></div>';
+    });
+
+    container.innerHTML = html;
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we should start processing check or load results directly
+    const loadingSection = document.getElementById('loading-section');
+    if (loadingSection && loadingSection.style.display !== 'none') {
+        checkStatus();
+    } else {
+        loadResults();
+    }
+});
+</script>
+{% endblock %}
