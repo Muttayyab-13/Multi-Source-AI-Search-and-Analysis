@@ -310,8 +310,8 @@ CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
 
 **Build and run:**
 ```bash
-docker build -t multi-source-ai-search .
-docker run -p 5000:5000 --env-file .env multi-source-ai-search
+docker build -t Multi-Source-AI-Search-and-Analysis .
+docker run -p 5000:5000 --env-file .env Multi-Source-AI-Search-and-Analysis
 ```
 
 ## Technology Stack
@@ -341,27 +341,4 @@ docker run -p 5000:5000 --env-file .env multi-source-ai-search
 ### Development Tools
 - **Git**: Version control
 - **Docker**: Containerization
-
-## Performance Specifications
-
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-```
-MIT License
-
-Copyright (c) 2024 Multi-Source AI Search Team
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-```
 
