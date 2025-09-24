@@ -102,11 +102,7 @@ multi-source-ai-search/
 │   ├── base.html                    # Base template
 │   ├── index.html                   # Homepage
 │   └── results.html                 # Results display
-│
-└── tests/ (optional)
-    ├── test_services.py             # Service tests
-    ├── test_models.py               # Model tests
-    └── test_app.py                  # Application tests
+__            
 ```
 
 ## Quick Start
