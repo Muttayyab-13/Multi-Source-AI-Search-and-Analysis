@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-2.3+-green.svg)](https://flask.palletsprojects.com/)
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--3.5-orange.svg)](https://openai.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 
 > A comprehensive Flask-based web application that performs AI-powered analysis across multiple data sources (YouTube, News, Twitter/X) with intelligent search capabilities and interactive Q&A functionality.
 
