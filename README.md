@@ -124,7 +124,7 @@ multi-source-ai-search/
 **Clone the repository:**
 ```bash
 git clone https://github.com/Muttayyab-13/Multi-Source-AI-Search-and-Analysis
-cd multi-source-ai-search
+cd Multi-Source-AI-Search-and-Analysis
 ```
 
 **Create and activate virtual environment:**
