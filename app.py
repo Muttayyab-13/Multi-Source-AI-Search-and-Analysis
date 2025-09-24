@@ -31,7 +31,7 @@ ai_analyzer = AIAnalyzer()
 sentiment_analyzer = SentimentAnalyzer()
 rag_bot = RAGBot(vector_store, ai_analyzer)
 
-# Global storage for current analysis (in production, use Redis or database)
+# Global storage for current analysis
 current_analysis = {}
 processing_status = {'is_processing': False, 'progress': 0, 'message': 'Ready'}
 
