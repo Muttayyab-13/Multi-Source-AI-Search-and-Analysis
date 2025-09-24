@@ -63,6 +63,8 @@ Core Components:
 - VADER Sentiment Analysis
 - Sentence Transformers
 ```
+![WhatsApp Image 2025-09-24 at 19 15 38_2de4e67f](https://github.com/user-attachments/assets/8867c974-4c6e-4753-ba11-a6447df47fd0)
+
 
 ## Project Structure
 
