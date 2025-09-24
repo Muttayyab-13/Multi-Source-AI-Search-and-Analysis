@@ -2,7 +2,9 @@ from flask import Flask, render_template, request, jsonify, session, redirect
 import json
 from datetime import datetime
 import threading
+import os
 import time
+import logging
 
 # Import our services
 from services.data_fetcher import MultiSourceDataFetcher
@@ -14,6 +16,13 @@ from config.settings import Config
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.SECRET_KEY
+
+# Configure basic logging for the application
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+)
+logger = logging.getLogger('msa')
 
 # Global services (in production, use proper dependency injection)
 vector_store = VectorStore()
@@ -40,7 +49,12 @@ def search():
     
     # Store query in session
     session['current_query'] = query
-    
+    # Mark processing as queued so the frontend will start polling status immediately
+    processing_status.update({'is_processing': True, 'progress': 0, 'message': 'Queued - starting processing...'})
+
+    logger.info("Search submitted: %s", query)
+    logger.info("Starting background processing thread for query: %s", query)
+
     # Start background processing
     thread = threading.Thread(target=process_search_async, args=(query,))
     thread.daemon = True
@@ -54,23 +68,33 @@ def process_search_async(query: str):
     
     try:
         processing_status.update({'is_processing': True, 'progress': 10, 'message': 'Fetching data from sources...'})
+        logger.info("process_search_async started for query: %s", query)
+        logger.info("Status updated: fetching data from sources")
         
         # Step 1: Fetch data from all sources
         documents = data_fetcher.fetch_all_sources(query)
         processing_status.update({'progress': 40, 'message': 'Processing and storing data...'})
+        logger.info("Fetched %d documents", len(documents))
+        logger.info("Status updated: processing and storing data")
         
         # Step 2: Clear previous data and add new documents to vector store
         vector_store.clear()
         vector_store.add_documents(documents)
         processing_status.update({'progress': 60, 'message': 'Analyzing sentiment...'})
+        logger.info("Documents added to vector store")
+        logger.info("Status updated: analyzing sentiment")
         
         # Step 3: Perform sentiment analysis
         source_analyses = sentiment_analyzer.analyze_documents(documents)
         processing_status.update({'progress': 80, 'message': 'Generating AI insights...'})
+        logger.info("Sentiment analysis complete for %d source groups", len(source_analyses))
+        logger.info("Status updated: generating AI insights")
         
         # Step 4: Generate AI analysis
         analysis = ai_analyzer.generate_analysis(query, documents, source_analyses)
         processing_status.update({'progress': 90, 'message': 'Finalizing results...'})
+        logger.info("AI analysis generated")
+        logger.info("Status updated: finalizing results")
         
         # Step 5: Store results
         current_analysis.update({
@@ -80,11 +104,12 @@ def process_search_async(query: str):
             'sentiment_distribution': sentiment_analyzer.get_overall_sentiment_distribution(source_analyses),
             'timestamp': datetime.now().isoformat()
         })
-        
         processing_status.update({'is_processing': False, 'progress': 100, 'message': 'Analysis complete'})
+        logger.info("Analysis complete for query: %s", query)
+        logger.info("Results stored; progress set to 100")
         
     except Exception as e:
-        print(f"Error in async processing: {e}")
+        logger.exception("Error in async processing for query: %s", query)
         processing_status.update({'is_processing': False, 'progress': 0, 'message': f'Error: {str(e)}'})
 
 @app.route('/results')
@@ -99,13 +124,21 @@ def results():
 @app.route('/api/status')
 def get_status():
     """Get processing status"""
-    return jsonify(processing_status)
+    # Log status requests at debug level to avoid too much noise
+    logger.debug("Status requested: %s", processing_status)
+    # Include server PID and whether results exist to help debug process mismatches
+    status_copy = processing_status.copy()
+    status_copy['server_pid'] = os.getpid()
+    status_copy['has_results'] = bool(current_analysis)
+    status_copy['last_checked'] = datetime.now().isoformat()
+    return jsonify(status_copy)
 
 @app.route('/api/results')
 def get_results():
     """Get analysis results"""
     if not current_analysis:
-        return jsonify({'error': 'No analysis available'}), 404
+        logger.info("/api/results requested but no analysis available yet (PID=%s)", os.getpid())
+        return jsonify({'error': 'No analysis available', 'server_pid': os.getpid(), 'has_results': False}), 404
     
     # Prepare response data
     analysis = current_analysis['analysis']
@@ -199,4 +232,9 @@ def get_conversation():
     return jsonify({'conversation': history})
 
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True)
+    # Do not use the reloader when running with background threads; the reloader
+    # spawns a child process which can cause background threads started during
+    # requests to run in a different process than the one serving HTTP requests.
+    # In development you can set debug=True but disable the reloader.
+    logger.info("Starting Flask app; server PID=%s", os.getpid())
+    app.run(debug=True, threaded=True, use_reloader=False)

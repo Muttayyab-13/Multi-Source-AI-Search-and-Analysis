@@ -84,9 +84,12 @@ class MultiSourceDataFetcher:
                     }
                 )
                 results.append(result)
-            
+                
+            print(result)   # Debug Print
             return results
             
+
+
         except Exception as e:
             print(f"YouTube API error: {e}")
             return self._get_youtube_placeholder_data(query)
@@ -122,9 +125,11 @@ class MultiSourceDataFetcher:
                     }
                 )
                 results.append(result)
+
+            print(result)   # Debug Print
             
             return results
-            
+           
         except Exception as e:
             print(f"News API error: {e}")
             return self._get_news_placeholder_data(query)
@@ -140,7 +145,7 @@ class MultiSourceDataFetcher:
                 self.twitter_client.search_recent_tweets,
                 query=query,
                 tweet_fields=['created_at', 'author_id', 'public_metrics'],
-                max_results=100
+                max_results=10
             ).flatten(limit=5)
             
             
@@ -159,6 +164,7 @@ class MultiSourceDataFetcher:
                     }
                 )
                 results.append(result)
+                print(result)   # Debug Print
             
             return results
             
