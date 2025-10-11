@@ -5,13 +5,13 @@ load_dotenv()
 
 class Config:
     # API Keys 
-    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', 'your-openai-api-key-here')
-    NEWS_API_KEY = os.getenv('NEWS_API_KEY', '9d6ea6b7f375468d9940380668f31b81')
+    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', 'openai-api-key')
+    NEWS_API_KEY = os.getenv('NEWS_API_KEY', 'News-Key')
     TWITTER_BEARER_TOKEN = os.getenv('TWITTER_BEARER_TOKEN', 'your-twitter-bearer-token-here')
-    YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', 'your-youtube-api-key-here')
+    YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', 'youtube-api-key')
     
     # Application Settings
-    SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
+    SECRET_KEY = os.getenv('SECRET_KEY', 'secret-key')
     MAX_RESULTS_PER_SOURCE = 50
     VECTOR_DB_DIMENSION = 384  # For sentence-transformers/all-MiniLM-L6-v2
     

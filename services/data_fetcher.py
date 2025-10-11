@@ -84,8 +84,7 @@ class MultiSourceDataFetcher:
                     }
                 )
                 results.append(result)
-                
-            print(result)   # Debug Print
+
             return results
             
 
@@ -126,8 +125,6 @@ class MultiSourceDataFetcher:
                 )
                 results.append(result)
 
-            print(result)   # Debug Print
-            
             return results
            
         except Exception as e:
@@ -164,14 +161,15 @@ class MultiSourceDataFetcher:
                     }
                 )
                 results.append(result)
-                print(result)   # Debug Print
-            
+
             return results
             
         except Exception as e:
             print(f"Twitter API error: {e}")
             return self._get_twitter_placeholder_data(query)
-    
+        
+
+
     def _get_youtube_placeholder_data(self, query: str) -> List[SearchResult]:
         """Placeholder YouTube data when API fails"""
         return [
@@ -209,4 +207,4 @@ class MultiSourceDataFetcher:
                 timestamp=datetime.now() - timedelta(minutes=i*10),
                 metadata={'author_id': f'user_{i+1}', 'retweet_count': i*5, 'like_count': i*10}
             ) for i in range(50)
-        ]
+        ]        

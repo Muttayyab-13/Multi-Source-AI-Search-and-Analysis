@@ -64,7 +64,7 @@ class SentimentAnalyzer:
     
     def _extract_key_themes(self, documents: List[SearchResult]) -> List[str]:
         """Extract key themes from documents (simplified implementation)"""
-        # In a production system, you'd use more sophisticated NLP
+        # In a production system, we wouldd use more sophisticated NLP
         # For now, we'll extract common words (excluding stop words)
         
         common_words = defaultdict(int)
